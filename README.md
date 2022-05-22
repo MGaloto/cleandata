@@ -62,16 +62,6 @@ Regresion Lineal Multiple
 
 # Visualizaciones
 
-**Distribucion**
-
-<p align="center">
-  <img 
-    width="800"
-    height="600"
-    src="Img/distr.png"
-  >
-</p>
-
 **3D Plot**
 
 <p align="center">
@@ -81,6 +71,18 @@ Regresion Lineal Multiple
     src="Img/plot3d.gif"
   >
 </p>
+
+**Distribucion**
+
+<p align="center">
+  <img 
+    width="800"
+    height="500"
+    src="Img/distr.png"
+  >
+</p>
+
+
 
 
 
