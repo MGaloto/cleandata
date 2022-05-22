@@ -88,11 +88,6 @@ Regresion Lineal Multiple
 
 # Datos
 
-<ui>
 
-<li>
 [properatti.csv](https://drive.google.com/file/d/1q25gqE943_Rhq9ejUrAVQSC-m3-O6XGF/view?usp=sharing)
-</li>
 
-
-</ui>
