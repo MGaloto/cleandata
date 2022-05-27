@@ -8,6 +8,6 @@ libs/
 ninja.Rmd
 ninja.html
 ninja_files/
-notebook.Rmd
-notebook_modelo.Rmd
+notebook.html
+notebook_modelo.html
 rsconnect/

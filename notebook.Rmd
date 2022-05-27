@@ -1,0 +1,668 @@
+---
+title: "Data Wrangling"
+author: "Maximiliano Galoto"
+subtitle: "Visualizacion y Limpieza de Datos"
+output:
+ prettydoc::html_pretty:
+    theme: lumen
+    highlight: github
+    toc: true
+    toc_depth: 2
+    math: katex
+
+---
+
+
+```{css my-header-colors, echo = FALSE}
+.page-header {
+    background-image: url('https://media.giphy.com/media/1pmatQ3LcP5XFYxSWF/giphy.gif');
+    border: solid 1px black;
+    border-radius: .3rem;
+    background-size: cover;
+}
+
+```
+
+```{css , echo = FALSE}
+
+.myimg {
+  border: solid 1px black;
+}
+
+```
+
+
+<style type="text/css">
+
+.toc .toc-box {
+    padding: 1.5rem;
+    background-color: #f5f5f5;
+    border: solid 1px #6b6b6b;
+    border-radius: .3rem;
+}
+
+a {
+    color: black;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+
+
+.main-content h2, .main-content h3, .main-content h4, .main-content h5, .main-content h6 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 400;
+    color: black;
+}
+
+
+.main-content h1 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 750;
+    background-image: url('https://media.giphy.com/media/1pmatQ3LcP5XFYxSWF/giphy.gif');
+    background-position: center;
+    color: white;
+    text-align: center;
+    border: solid 1px black;
+    border-radius: .3rem;
+    background-color: #f5f5f5;
+} 
+
+
+
+h1.title {
+  font-size: 58px;
+  color: white;
+  text-align: center;
+}
+h3.subtitle { 
+    font-size: 28px;
+  font-family: "Times New Roman", Times, serif;
+  color: white ;
+  text-align: center;
+}
+h4.author { 
+    font-size: 24px;
+  font-family: "Times New Roman", Times, serif;
+  color:white ;
+  text-align: center;
+}
+
+.main-content table th {
+    font-weight: 700;
+    background-color: blue;
+    color: rgb(255, 255, 255);
+}
+
+
+
+
+</style>
+
+<br>
+</br>
+
+
+
+
+
+
+<div style="text-align: left" class="toc-box">
+# 1 - Introduccion
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
+
+El siguiente trabajo consiste en utilizar los datos de la inmobiliaria [Properatti](https://www.properati.com.ar/) de Argentina para programar utilizando el lenguaje <span style="color:blue">*Python*</span> un modelo de regresión lineal múltiple que mejor estime los precios en dólares por metro cuadrado.
+
+Los datos vienen con faltantes e incluso valores atípicos que perjudicarían a la estimación de los parámetros del modelo, por lo tanto, en este Notebook se realiza un análisis exploratorio y un data wrangling a los efectos de obtener los datos deseados para estimar el modelo.
+
+<br>
+</br>
+<div style="text-align: left" class="toc-box">
+# 2 - Librerias
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
+
+**_Librerías_**
+
+```{r}
+
+library(reticulate)
+
+Sys.setenv(RETICULATE_PYTHON = 'C:/ProgramData/Anaconda3/python.exe')
+
+use_python('C:/ProgramData/Anaconda3/python.exe')
+
+```
+
+
+
+```{python, warning=FALSE}
+
+
+import pandas as pd
+import numpy as np
+import plotly.io as pio
+import plotly.express as px
+import plotly.figure_factory as ff
+import matplotlib.pyplot as plt
+import matplotlib.patches
+import warnings
+from time import sleep
+from IPython.display import clear_output
+warnings.filterwarnings('ignore')
+
+
+
+data_location = "properatti.csv"
+data = pd.read_csv(data_location, sep=",")
+print('El data frame contiene: ',data.shape[0], ' filas y ', data.shape[1], ' columnas.')
+
+
+
+```
+<br>
+</br>
+<div style="text-align: left" class="toc-box">
+# 3 - Visualizaciones Preliminares
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
+
+```{python}
+state = data.groupby('state_name')['price_usd_per_m2'].mean().sort_values(ascending = False).index
+values = data.groupby('state_name')['price_usd_per_m2'].mean().sort_values(ascending = False).values
+
+datas = {'state': state, 'price_mean': values}
+df = pd.DataFrame(datas)
+
+
+def getPlot(df, x, y, title , x_descripy, y_descripy,  number_color):
+    fig = px.bar(df, x=x, y=y,
+                title= title,
+                color_discrete_sequence=[px.colors.qualitative.Alphabet[number_color]],
+                width=800, height=600,
+                labels={x:x_descripy, y:y_descripy},
+                template="simple_white"
+                )
+    return fig.show()
+
+```
+
+
+```{python}
+zona       = ((data.groupby("state_name").price_usd_per_m2.count()/data.shape[0])*100).sort_values(ascending = False).index
+porcentaje = ((data.groupby("state_name").price_usd_per_m2.count()/data.shape[0])*100).sort_values(ascending = False).values
+
+datos  = {'zona': zona, 'porcentaje': porcentaje}
+df_dos = pd.DataFrame(datos)
+```
+
+El siguiente gráfico nos muestra el porcentaje de datos por Zona que tiene el data frame. Capital Federal tiene el 20% de los datos.
+
+```{python}
+getPlot(df_dos, 'zona', 'porcentaje', 'Datos de Precio en Usd por M2' , 'zona', 'porcentaje',  2)
+
+```
+
+
+
+```{python}
+getPlot(df, 'state', 'price_mean', 'Precio Promedio por Metro Cuadrado por Zona' , 'Zona', 'Precio' , 15)
+
+```
+
+
+
+```{python}
+
+
+tipo = data.groupby('property_type')['price_usd_per_m2'].mean().sort_values(ascending = False).index
+values = data.groupby('property_type')['price_usd_per_m2'].mean().sort_values(ascending = False).values
+
+datas = {'tipo': tipo, 'price_mean': values}
+df = pd.DataFrame(datas)
+
+getPlot(df, 'tipo', 'price_mean', 'Precio Promedio M2 Por Tipo de Propiedad' , 'Tipo de Propiedad', 'Precio', 21)
+
+```
+
+
+```{python}
+def getPlotGroup(data, filtro,number_color):
+    data = data.loc[data['state_name'] == filtro, ]
+    x = data.groupby('place_name')['price_usd_per_m2'].std().sort_values(ascending = False).index
+    y = data.groupby('place_name')['price_usd_per_m2'].std().sort_values(ascending = False).values
+   
+    df = pd.DataFrame({'x': x, 'y': y})
+    fig = px.bar(df, x=x, y=y,
+                title= 'Desvio Standard' + ' m2 ' + filtro,
+                color_discrete_sequence=[px.colors.qualitative.Alphabet[number_color]],
+                width=800, height=600,
+                template="simple_white"
+                )
+    return fig.show()
+```
+
+El gráfico de barras con desvío standard en el precio por metro cuadrado en dólares nos sirve para visualizar la dispersión de los datos respecto al promedio de cada uno de los barrios.
+
+
+
+```{python}
+getPlotGroup(data, 'Capital Federal', 7)
+
+```
+
+
+
+```{python}
+
+df_caba = data[data['state_name'] == 'Capital Federal']
+x = df_caba.groupby('place_name')['price_usd_per_m2'].std().sort_values(ascending = False).index
+y = df_caba.groupby('place_name')['price_usd_per_m2'].std().sort_values(ascending = False).values
+
+```
+
+
+```{python}
+
+df_caba_original = data[data['state_name'] == 'Capital Federal']
+df_caba = data[data['state_name'] == 'Capital Federal']
+
+```
+
+En el siguiente gráfico podemos ver pocos puntos ya que a simple vista encontramos valores atípicos que deberíamos ver si es un error en los datos o efectivamente son verdaderos.
+
+```{python}
+fig = px.scatter(df_caba, x="surface_total_in_m2", y="price_usd_per_m2", color="property_type",
+                  hover_data=['property_type'])
+fig.show()
+
+```
+
+
+
+<br>
+</br>
+<div style="text-align: left" class="toc-box">
+# 4 - Valores Atipicos
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
+Se agrupan por Zona y tipo de inmueble. Luego se sacan los percentiles 75 y 25, el rango intercuartil y, por ultimo, se extraen los indices de los precios por metro cuadrado en dolares que están por encima y debajo de los siguientes rangos:
+
+- rango_max = q75 + 1.5 * (q75 - q25)   
+
+- rango_min = q25 - 1.5 * (q75 - q25) 
+
+
+
+```{python}
+
+import itertools
+
+
+lista_index   = []
+for i in range(len(df_caba.place_name.unique())):
+    for tipo in list(df_caba.property_type.unique()):
+        try:
+            q75,q25 = np.nanpercentile(df_caba.loc[(df_caba.place_name == df_caba.place_name.unique()[i]) &  (df_caba.property_type == tipo), ['price_usd_per_m2']], [75, 25])
+            rango_max = q75 + 1.5 * (q75 - q25)   
+            rango_min = q25 - 1.5 * (q75 - q25) 
+            index_maximos = list(df_caba.loc[(df_caba.place_name == df_caba.place_name.unique()[i]) &  (df_caba.property_type == tipo), ['price_usd_per_m2']][df_caba['price_usd_per_m2'] > rango_max].index)
+            index_minimos = list(df_caba.loc[(df_caba.place_name == df_caba.place_name.unique()[i]) &  (df_caba.property_type == tipo), ['price_usd_per_m2']][df_caba['price_usd_per_m2'] < rango_min].index)
+            index_total = index_maximos + index_minimos
+            if len(index_total) >= 1:
+                lista_index.append(index_total)
+        except Exception as error:
+            print(df_caba.place_name.unique()[i], ' No tiene: ', tipo)
+lista_filtro = list(itertools.chain.from_iterable(lista_index))
+print('Total de indices a eliminar: ',len(lista_filtro))
+
+```
+
+
+```{python}
+df_caba.drop(lista_filtro, axis=0, inplace=True)
+df_caba.reset_index(drop=True, inplace=True)
+
+```
+
+
+
+
+En el siguiente gráfico observamos un boxplot de Boedo antes y después de la limpieza de los valores atípicos. Si bien los mas extremos se eliminaron todavía queda por ver los que faltan. 
+
+```{python}
+zona="Boedo"
+x        = df_caba_original.loc[df_caba_original['place_name'] == zona, ]['place_name']
+y        = df_caba_original.loc[df_caba_original['place_name'] == zona, ]['price_usd_per_m2']
+color    = df_caba_original.loc[df_caba_original['place_name'] == zona, ]['property_type']
+x_dos    = df_caba.loc[df_caba['place_name'] == zona, ]['place_name']
+y_dos    = df_caba.loc[df_caba['place_name'] == zona, ]['price_usd_per_m2']
+color_dos= df_caba.loc[df_caba['place_name'] == zona, ]['property_type']
+fig      = px.box(df_caba_original, x= x, y=y, points="all", color = color, title="Zona por Tipo de departamento Con Outliers")
+figdos   = px.box(df_caba, x= x_dos, y=y_dos, points="all", color = color_dos, title="Zona por Tipo de departamento Sin Outliers")
+fig.show()
+figdos.show()
+
+```
+
+
+
+- Podemos observar que la columna <b>floor</b> ,<b>expensas</b> y <b>rooms</b> contienen mas del 50 % de valores como nulos.
+
+```{python}
+
+round(df_caba.isnull().sum() / df_caba.shape[0],2).sort_values(ascending = False)
+```
+
+
+```{python}
+for i in range(len(df_caba.columns)):
+    if len(df_caba[df_caba.columns.values[i]].unique()) == 1 or round(df_caba.isnull().sum() / df_caba.shape[0],2)[i] >= 0.5:
+        print('La columna :',df_caba.columns[i], 'tiene ', len(df_caba[df_caba.columns.values[i]].unique()), 'valor/es unico/s y el', 100 * round(df_caba.isnull().sum() / df_caba.shape[0],2)[i], '% de valores Nulos')
+
+```
+
+
+Se eliminan las columnas que tienen valores nulos y constantes:
+
+```{python}
+df_caba.drop('floor',        inplace=True, axis=1)
+df_caba.drop('expenses',     inplace=True, axis=1)
+df_caba.drop('Unnamed: 0',   inplace=True, axis=1)
+df_caba.drop('operation',    inplace=True, axis=1)
+df_caba.drop('country_name', inplace=True, axis=1)
+
+```
+
+
+
+```{python}
+
+
+for i in range(len(df_caba.columns)):
+    if round(df_caba.isnull().sum() / df_caba.shape[0],2)[i] == 0:
+        print(df_caba.columns[i], ' tiene ', round(df_caba.isnull().sum() / df_caba.shape[0],2)[i], ' valores Nulos')
+
+```
+
+
+<br>
+</br>
+<div style="text-align: left" class="toc-box">
+# 5 - Procesamiento de Lenguaje Natural
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
+
+El kit de herramientas de lenguaje natural, o más comúnmente <span style="color:red">*NLTK*</span>, es un conjunto de bibliotecas y programas para el procesamiento del lenguaje natural (PLN) simbólico y estadísticos para el lenguaje de programación **Python**. 
+
+NLTK está destinado a apoyar la investigación y la enseñanza en procesamiento de lenguaje natural (PLN) o áreas muy relacionadas, que incluyen la lingüística empírica, las ciencias cognitivas, la inteligencia artificial, la recuperación de información, y el aprendizaje de la máquina.5. <span style="color:red">*NLTK*</span> se ha utilizado con éxito como herramienta de enseñanza, como una herramienta de estudio individual, y como plataforma para los sistemas de investigación de prototipos y construcción.
+
+Para extraer información de las columnas descripción y title se utiliza NLTK, se limpian los <span style="color:green">*StopWords*</span> para luego sacar la mayor cantidad y calidad de datos posibles como, por ejemplo:
+
+- Cantidad de Ambientes
+- Pileta (Si/No)
+
+
+
+```{python}
+
+from nltk.corpus import stopwords
+stopwords = stopwords.words('spanish')
+len(stopwords)
+stopwords.append('-')
+stopwords.append(' ')
+print('Primeros StopWords: ',stopwords[0:15])
+```
+
+
+```{python}
+
+df_caba = df_caba.reset_index()
+
+
+elementos_sin_stowpords_descripcion = []
+elementos_sin_stowpords_titulo = []
+for i in range(df_caba.shape[0]):
+    elemento_descripcion = ' '.join([word for word in df_caba['description'][i].lower().split(' ') if word not in stopwords])
+    elementos_sin_stowpords_descripcion.append(elemento_descripcion)
+    elemento_titulo = ' '.join([word for word in df_caba['title'][i].lower().split(' ') if word not in stopwords])
+    elementos_sin_stowpords_titulo.append(elemento_titulo)
+
+```
+
+
+
+```{python}
+
+palabras_descripcion = []
+for i in range(len(elementos_sin_stowpords_descripcion)):
+    lista_uno = elementos_sin_stowpords_descripcion[i]
+    lista_uno = lista_uno.split(' ')
+    for lista in lista_uno:
+        palabras_descripcion.append(lista)
+        
+palabras_titulo = []
+for i in range(len(elementos_sin_stowpords_titulo)):
+    lista_uno = elementos_sin_stowpords_titulo[i]
+    lista_uno = lista_uno.split(' ')
+    for lista in lista_uno:
+        palabras_titulo.append(lista)
+```
+
+
+
+```{python}
+values_descripcion = pd.Series(palabras_descripcion).value_counts()
+
+values_descripcion = values_descripcion[1:] # Eliminamos el primer elemento ya que son vacios
+
+values_titulo = pd.Series(palabras_titulo).value_counts()
+```
+
+
+Frecuencia de Palabras:
+
+```{python}
+print(values_descripcion)
+```
+
+
+```{python}
+print(values_titulo)
+```
+
+
+
+```{python}
+datos  = {'palabra': values_descripcion.index[0:30], 'frecuencia': values_descripcion.values[0:30]}
+df_palabras_descripcion = pd.DataFrame(datos)
+
+getPlot(df_palabras_descripcion, 'palabra', 'frecuencia', 'Frecuencia de Palabras Descripcion' , 'palabra', 'frecuencia',  5)
+```
+
+```{python}
+datos  = {'palabra': values_titulo.index[0:30], 'frecuencia': values_titulo.values[0:30]}
+df_palabras_title = pd.DataFrame(datos)
+
+getPlot(df_palabras_title, 'palabra', 'frecuencia', 'Frecuencia de Palabras Title' , 'palabra', 'frecuencia',  11)
+```
+
+
+
+
+```{python}
+ambientes_descripcion = []
+ambientes_titulo = []
+parrilla_descripcion = []
+parrrila_titulo = []
+
+
+diccionario_replace = { 'uno' : 1, 'dos' : 2, 'tres' : 3 , 'cuatro' : 4, 'cinco' : 5 , 'seis' : 6, 'siete' : 7 , 'ocho' : 8 , 'nueve' : 9 , 'dies' : 10 , 'diez': 10,
+                       '1' : 1, '2' : 2, '3' : 3 , '4' : 4, '5' : 5 ,'6' : 6, '7' : 7 ,'8' : 8 ,'9' : 9, '10' : 10,'un' : 1, 'mono' : 1}
+
+tuppla_filtros = ( 'ambientes' , 'amb.' , 'amb' )
+
+tuppla_monoambientes = ('monoambiente'  ,'mono-ambiente' ,'ambiente' )
+
+diccionario_parrilla = {'parrilla' : 1}
+
+for description in elementos_sin_stowpords_descripcion:
+    element = description.split(' ')
+    clean_elem = 0
+    for i in range(len(element)):
+        ele = element[i].lower().replace(',','').replace('.','').replace('-','').replace(';','')
+        if ele.lower() == 'parrilla':
+            aux = ele.lower()
+            clean_elem = diccionario_parrilla.get(aux)
+            if not clean_elem:
+                break
+    parrilla_descripcion.append(clean_elem)
+    
+    
+for description in elementos_sin_stowpords_titulo:
+    element = description.split(' ')
+    clean_elem = 0
+    for i in range(len(element)):
+        ele = element[i].lower().replace(',','').replace('.','').replace('-','').replace(';','')
+        if ele.lower() == 'parrilla':
+            aux = ele.lower()
+            clean_elem = diccionario_parrilla.get(aux)
+            if not clean_elem:
+                break
+    parrrila_titulo.append(clean_elem)
+
+
+for description in elementos_sin_stowpords_descripcion:
+    element = description.split(' ')
+    clean_elem = None
+    for i in range(len(element)):
+        ele = element[i].lower().replace(',','').replace('.','').replace('-','').replace(';','')
+        if ele in tuppla_filtros:
+            aux = element[i-1].lower()
+            clean_elem = diccionario_replace.get(aux)
+            if not clean_elem:
+                break
+        if ele in tuppla_monoambientes:
+            clean_elem = 1
+            break
+    ambientes_descripcion.append(clean_elem)
+
+
+for description in elementos_sin_stowpords_titulo:
+    element = description.split(' ')
+    clean_elem = None
+    for i in range(len(element)):
+        ele = element[i].lower().replace(',','').replace('.','').replace('-','').replace(';','')
+        if ele in tuppla_filtros:
+            aux = element[i-1].lower()
+            clean_elem = diccionario_replace.get(aux)
+            if not clean_elem:
+                break
+        if ele in tuppla_monoambientes:
+            clean_elem = 1
+            break
+    ambientes_titulo.append(clean_elem)
+
+```
+
+
+```{python}
+
+print('La columna Descripcion para ambientes tiene: ',pd.Series(ambientes_descripcion).isnull().sum(),'nulos, mientras que la columna Title para ambientes tiene: ',pd.Series(ambientes_titulo).isnull().sum())
+```
+
+Unificacion:
+
+```{python}
+lista_ambientes_final = []
+for i in range(len(ambientes_descripcion)):
+    if ambientes_descripcion[i] == None:
+        lista_ambientes_final.append(ambientes_titulo[i])
+    else:
+        lista_ambientes_final.append(ambientes_descripcion[i])
+        
+print('Completamos el % ',(pd.Series(lista_ambientes_final).value_counts().sum()/df_caba.shape[0])*100, 'del data set')
+
+```
+
+
+
+```{python}
+lista_parrilla_final = []
+for i in range(len(parrilla_descripcion)):
+    if parrilla_descripcion[i] == None:
+        lista_parrilla_final.append(parrilla_titulo[i])
+    else:
+        lista_parrilla_final.append(parrilla_descripcion[i])
+
+```
+
+
+```{python}
+df_caba['ambientes'] = pd.Series(lista_ambientes_final)
+
+df_caba['parrilla'] = pd.Series(lista_parrilla_final)
+
+round(df_caba.isnull().sum() / df_caba.shape[0],2).sort_values(ascending = False)
+```
+
+```{python}
+df_caba_apartment = df_caba.loc[df_caba['property_type'] == 'apartment' , :]
+df_caba_filter_apartment = df_caba_apartment.loc[(df_caba_apartment['surface_covered_in_m2'] < 250) & (df_caba_apartment['price_usd_per_m2'] < 5000)]
+
+df_caba_filter_apartment["ambientes"] = df_caba_filter_apartment["ambientes"].astype(str)
+fig = px.scatter(df_caba_filter_apartment, x="surface_covered_in_m2", y="price_usd_per_m2", color="ambientes",
+                  hover_data=['property_type'], title = 'Scatter Plot Precio y Superficie Separado por Ambientes para apartment')
+fig.show()
+
+
+```
+
+
+
+```{python}
+
+(data['price_aprox_local_currency']/data['price_aprox_usd']).mean()
+```
+
+
+
+
+```{python}
+
+df = px.data.tips()
+fig = px.box(df_caba, x="place_name", y="price_usd_per_m2", points="all", color ='property_type')
+fig.show()
+
+```
+
+
+

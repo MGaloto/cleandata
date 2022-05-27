@@ -1,0 +1,463 @@
+---
+title: "Data Science"
+author: "Maximiliano Galoto"
+subtitle: "Regresion Lineal"
+output:
+ prettydoc::html_pretty:
+    theme: lumen
+    highlight: github
+    toc: true
+    toc_depth: 2
+    math: katex
+
+---
+
+
+```{css my-header-colors, echo = FALSE}
+.page-header {
+    background-image: url('https://i.gifer.com/J4o.gif');
+    border: solid 1px black;
+    border-radius: .3rem;
+    background-size: cover;
+}
+
+```
+
+```{css , echo = FALSE}
+
+.myimg {
+  border: solid 1px black;
+}
+
+```
+
+
+<style type="text/css">
+
+.toc .toc-box {
+    padding: 1.5rem;
+    background-color: #f5f5f5;
+    border: solid 1px #6b6b6b;
+    border-radius: .3rem;
+}
+
+a {
+    color: black;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+
+
+.main-content h2, .main-content h3, .main-content h4, .main-content h5, .main-content h6 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 400;
+    color: black;
+}
+
+
+.main-content h1 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 750;
+    background-image: url('https://i.gifer.com/J4o.gif');
+    background-position: center;
+    color: white;
+    text-align: center;
+    border: solid 1px black;
+    border-radius: .3rem;
+    background-color: #f5f5f5;
+} 
+
+
+
+h1.title {
+  font-size: 58px;
+  color: white;
+  text-align: center;
+}
+h3.subtitle { 
+    font-size: 28px;
+  font-family: "Times New Roman", Times, serif;
+  color: white ;
+  text-align: center;
+}
+h4.author { 
+    font-size: 24px;
+  font-family: "Times New Roman", Times, serif;
+  color:white ;
+  text-align: center;
+}
+
+.main-content table th {
+    font-weight: 700;
+    background-color: blue;
+    color: rgb(255, 255, 255);
+}
+
+
+
+
+</style>
+
+<br>
+</br>
+
+
+
+
+
+
+<div style="text-align: left" class="toc-box">
+# 1 - Introduccion
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
+
+**_Librerias_**
+
+```{r}
+
+library(reticulate)
+
+Sys.setenv(RETICULATE_PYTHON = 'C:/ProgramData/Anaconda3/python.exe')
+
+use_python('C:/ProgramData/Anaconda3/python.exe')
+
+```
+
+
+
+
+```{python, warning=FALSE}
+
+
+import pandas as pd
+import numpy as np
+import plotly.io as pio
+import plotly.express as px
+import plotly.figure_factory as ff
+import matplotlib.pyplot as plt
+import matplotlib.patches
+import warnings
+from time import sleep
+from IPython.display import clear_output
+warnings.filterwarnings('ignore')
+
+
+
+data_location = "df_caba.csv"
+df_caba = pd.read_csv(data_location, sep=",")
+print('El data frame contiene: ',df_caba.shape[0], ' filas y ', df_caba.shape[1], ' columnas.')
+
+
+
+```
+
+
+```{python}
+
+df_caba = df_caba.loc[df_caba['place_name'] != 'Capital Federal']
+df_caba.reset_index(drop=True, inplace=True)
+df_caba.shape
+
+```
+
+
+```{python}
+
+df_caba.head(5)
+
+```
+
+
+
+```{python}
+
+round(df_caba.isnull().sum() / df_caba.shape[0],2).sort_values(ascending = False)
+
+```
+
+
+```{python}
+
+def getPlotGroupDos(data, number_color):
+    x = data.groupby('place_name')['price_usd_per_m2'].std().sort_values(ascending = False).index
+    y = data.groupby('place_name')['price_usd_per_m2'].std().sort_values(ascending = False).values
+   
+    df = pd.DataFrame({'x': x, 'y': y})
+    fig = px.bar(df, x=x, y=y,
+                title= 'Desvio Standard' + ' m2 ',
+                color_discrete_sequence=[px.colors.qualitative.Alphabet[number_color]],
+                width=800, height=600,
+                template="simple_white"
+                )
+    return fig.show()
+    
+
+
+getPlotGroupDos(df_caba,  7)
+
+```
+
+
+
+Grafico en 3D donde relacionamos las siguientes variables por zona: price_usd_per_m2, surface_covered_in_m2 y ambientes.
+
+```{python}
+
+def plot3d(df, x, y, z, color):
+    fig = px.scatter_3d(df, 
+                        title = "3D Plot",
+                        x = x, 
+                        y = y, 
+                        z = z, 
+                        color = color)
+    fig.update_layout(template="plotly_dark",
+                      width=800,
+                      height=700)
+    return fig.show()
+
+
+
+
+```
+
+
+
+
+
+```{python}
+
+hist_data    = []
+group_labels = []
+limite_superficie = 1000
+for i in range(len(df_caba['place_name'].unique())):
+    hist_datas = np.array(df_caba.loc[( df_caba['place_name'].isin([df_caba['place_name'].unique()[i]]) ) &  (df_caba['surface_covered_in_m2'] < limite_superficie)].surface_covered_in_m2.value_counts().index)
+    hist_data.append(hist_datas)
+    group_labels.append(df_caba['place_name'].unique()[i])
+
+
+```
+
+
+```{python}
+fig = ff.create_distplot(hist_data, group_labels, show_hist=False)
+fig.update_layout(title_text='Distribucion de la Superficie Cubierta por M2')
+
+```
+
+
+```{python}
+
+hist_data    = []
+group_labels = []
+limite_precio = 9000
+for i in range(len(df_caba['place_name'].unique())):
+    hist_datas = np.array(df_caba.loc[( df_caba['place_name'].isin([df_caba['place_name'].unique()[i]]))&  (df_caba['price_usd_per_m2'] < limite_precio) ].price_usd_per_m2.value_counts().index)
+    if len(hist_datas) == 1: continue
+    hist_data.append(hist_datas)
+    group_labels.append(df_caba['place_name'].unique()[i])
+
+
+```
+
+
+```{python}
+
+fig = ff.create_distplot(hist_data, group_labels, show_hist=False)
+fig.update_layout(title_text='Distribucion del precio en USD por M2')
+
+
+```
+
+Limpieza de Datos 
+
+```{python}
+
+df_caba_model = df_caba[['price_usd_per_m2','property_type','place_name', 'price', 'price_aprox_usd', 'surface_total_in_m2', 'surface_covered_in_m2','rooms', 'ambientes', 'parrilla']]
+df_caba_model.head(5)
+
+```
+
+
+
+
+```{python}
+
+df_caba_model['ambientes'] = df_caba_model.apply(lambda x: x['ambientes'] if x['ambientes'] > 0 else x['rooms'], axis = 1)
+
+df_caba_model.drop(columns=['rooms','price_aprox_usd','price'], inplace = True)
+
+round(df_caba_model.isnull().sum() / df_caba_model.shape[0],2).sort_values(ascending = False)
+```
+
+
+
+
+```{python}
+
+print('Luego de los drop queda un ',(df_caba_model.dropna().shape[0] / df_caba_model.shape[0]) * 100, '% del Data Set original')
+
+```
+
+
+```{python}
+
+x1 = np.array(df_caba_model.loc[df_caba_model['place_name'].isin(['Boedo'])].price_usd_per_m2.value_counts().sort_index(ascending = False).index)
+
+hist_data = [x1]
+group_labels = ['price_usd_per_m2'] 
+
+fig = ff.create_distplot(hist_data, group_labels, bin_size=400)
+fig.show()
+
+```
+
+
+
+```{python}
+index_drop_surface = df_caba_model.loc[(df_caba_model['place_name'].isin(['Boedo'])) & (df_caba_model['surface_covered_in_m2'].isin([324,350,566,600,800]))].index
+index_drop_price_boedo = df_caba_model.loc[(df_caba_model['place_name'].isin(['Boedo'])) & (df_caba_model['price_usd_per_m2'] > 3000)].index
+index_drop_price_sancristobal = df_caba_model.loc[(df_caba_model['place_name'].isin(['San Cristobal'])) & (df_caba_model['price_usd_per_m2'] > 3000)].index
+df_caba_model.drop(index_drop_surface, inplace=True)
+df_caba_model.drop(index_drop_price_boedo, inplace=True)
+df_caba_model.drop(index_drop_price_sancristobal, inplace=True)
+df_caba_model.reset_index(drop=True, inplace=True)
+```
+
+
+
+```{python}
+
+
+df_caba_filter = df_caba_model.loc[df_caba_model['place_name'].isin(['Boedo'])]
+
+df_caba_filter["ambientes"] = df_caba_filter["ambientes"].astype(str)
+fig = px.scatter(df_caba_filter, x="surface_covered_in_m2", y="price_usd_per_m2", color="property_type",
+                  hover_data=['property_type'], title = 'Scatter Plot Precio y Superficie Separado por place_name')
+fig.show()
+
+```
+
+
+
+
+
+```{python}
+index_drop_surface_total = df_caba_model.loc[(df_caba_model['surface_total_in_m2'] > 800)].index
+df_caba_model.drop(index_drop_surface_total, inplace=True)
+df_caba_model.reset_index(drop=True, inplace=True)
+
+
+```
+
+
+
+```{python}
+index_drop_surface_covered = df_caba_model.loc[(df_caba_model['surface_covered_in_m2'] > 800)].index
+df_caba_model.drop(index_drop_surface_covered, inplace=True)
+df_caba_model.reset_index(drop=True, inplace=True)
+
+
+```
+
+
+
+```{python}
+index_drop_ambientes = df_caba_model.loc[(df_caba_model['ambientes'] > 10)].index
+df_caba_model.drop(index_drop_ambientes, inplace=True)
+df_caba_model.reset_index(drop=True, inplace=True)
+
+```
+
+
+Visualizaciones Post Limpieza
+
+```{python}
+getPlotGroupDos(df_caba_model,  3)
+```
+
+
+
+```{python}
+fig = px.scatter(df_caba_model, x="surface_total_in_m2", y="price_usd_per_m2", color="property_type", hover_data=['property_type'])
+fig.show()
+```
+
+
+
+
+```{python}
+
+plot3d(df_caba_model, 'price_usd_per_m2', 'surface_total_in_m2', 'ambientes', 'place_name')
+```
+
+
+
+
+```{python}
+hist_data    = []
+group_labels = []
+limite_superficie = 350
+for i in range(len(df_caba_model['place_name'].unique())):
+    hist_datas = np.array(df_caba_model.loc[( df_caba_model['place_name'].isin([df_caba_model['place_name'].unique()[i]]) ) &  (df_caba_model['surface_covered_in_m2'] < limite_superficie)].surface_covered_in_m2.value_counts().index)
+    hist_data.append(hist_datas)
+    group_labels.append(df_caba_model['place_name'].unique()[i])
+
+
+```
+
+
+```{python}
+fig = ff.create_distplot(hist_data, group_labels, show_hist=False)
+fig.update_layout(title_text='Distribucion de la Superficie Cubierta por M2')
+
+```
+
+
+```{python}
+hist_data    = []
+group_labels = []
+
+for i in range(len(df_caba_model['place_name'].unique())):
+    hist_datas = np.array(df_caba_model.loc[( df_caba['place_name'].isin([df_caba_model['place_name'].unique()[i]]))].price_usd_per_m2.value_counts().index)
+    if len(hist_datas) == 1: continue
+    hist_data.append(hist_datas)
+    group_labels.append(df_caba['place_name'].unique()[i])
+
+```
+
+```{python}
+fig = ff.create_distplot(hist_data, group_labels, show_hist=False)
+fig.update_layout(title_text='Distribucion del precio en USD por M2')
+
+
+```
+
+
+
+```{python}
+df_caba_model.shape
+```
+
+
+
+
+```{python}
+df_caba_model.dropna(axis=0).shape
+```
+
+
+
+```{python}
+df_caba_model_final = df_caba_model.dropna(axis=0)
+df_caba_model_final.reset_index(inplace = True,drop=True)
+```
+
+
