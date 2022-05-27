@@ -10,7 +10,7 @@ El proposito de la limpieza del Data Set es a los efectos de poder estimar un mo
 
 
 <p>
-<a href="https://scikit-learn.org/stable/" rel="nofollow"><img src="https://e7.pngegg.com/pngimages/905/45/png-clipart-scikit-learn-python-scikit-logo-brand-learning-text-computer.png" align="right" width="150" style="max-width: 100%;"></a>
+<a href="https://scikit-learn.org/stable/" rel="nofollow"><img src="https://d33wubrfki0l68.cloudfront.net/f693dd79628fbdfa9bb751af7b1ea9888dfb2aee/07cab/static/uploads/scikit-learn.webp" align="right" width="200" style="max-width: 100%;"></a>
 </p>
 
 
