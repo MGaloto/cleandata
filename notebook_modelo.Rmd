@@ -118,8 +118,14 @@ h4.author {
 <br>
 </br>
 
+El siguiente trabajo consiste en un análisis preliminar de los datos de la inmobiliaria [Properatti](https://www.properati.com.ar/) luego de una visualización, limpieza y segmentación por CABA [Ver trabajo Aqui](https://rpubs.com/MGaloto/data_wrangling) para luego entrenar un modelo de <span style="color:blue">*Regresión Logística*</span> que nos sirva para predecir el precio en dolares por metro cuadrado. 
 
-**_Librerias_**
+
+<br>
+</br>
+
+
+**_Librerías_**
 
 ```{r}
 
@@ -142,11 +148,16 @@ import numpy as np
 import plotly.io as pio
 import plotly.express as px
 import plotly.figure_factory as ff
+from time import sleep
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+from math import sqrt
+from sklearn.model_selection import cross_validate
+import warnings
 import matplotlib.pyplot as plt
 import matplotlib.patches
-import warnings
-from time import sleep
-from IPython.display import clear_output
+
 warnings.filterwarnings('ignore')
 
 
@@ -156,8 +167,17 @@ df_caba = pd.read_csv(data_location, sep=",")
 print('El data frame contiene: ',df_caba.shape[0], ' filas y ', df_caba.shape[1], ' columnas.')
 
 
-
 ```
+
+<div style="text-align: left" class="toc-box">
+# 2 - Lectura del Data Set
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
 
 
 ```{python}
@@ -182,6 +202,10 @@ df_caba.head(5)
 round(df_caba.isnull().sum() / df_caba.shape[0],2).sort_values(ascending = False)
 
 ```
+
+El desvio estandard del precio en dolares por metro cuadrado por zona es el siguiente:
+
+*Se pueden observar dispersiones en los datos que perjudican la estimacion de los parametros de una regresion lineal. La idea principal es homogeneizar los datos lo mejor posible sin alterar la naturaleza de los mismos para generalizar y minimizar los errores.*
 
 
 ```{python}
@@ -236,27 +260,6 @@ def plot3d(df, x, y, z, color):
 
 hist_data    = []
 group_labels = []
-limite_superficie = 1000
-for i in range(len(df_caba['place_name'].unique())):
-    hist_datas = np.array(df_caba.loc[( df_caba['place_name'].isin([df_caba['place_name'].unique()[i]]) ) &  (df_caba['surface_covered_in_m2'] < limite_superficie)].surface_covered_in_m2.value_counts().index)
-    hist_data.append(hist_datas)
-    group_labels.append(df_caba['place_name'].unique()[i])
-
-
-```
-
-
-```{python}
-fig = ff.create_distplot(hist_data, group_labels, show_hist=False)
-fig.update_layout(title_text='Distribucion de la Superficie Cubierta por M2')
-
-```
-
-
-```{python}
-
-hist_data    = []
-group_labels = []
 limite_precio = 9000
 for i in range(len(df_caba['place_name'].unique())):
     hist_datas = np.array(df_caba.loc[( df_caba['place_name'].isin([df_caba['place_name'].unique()[i]]))&  (df_caba['price_usd_per_m2'] < limite_precio) ].price_usd_per_m2.value_counts().index)
@@ -267,6 +270,8 @@ for i in range(len(df_caba['place_name'].unique())):
 
 ```
 
+Distribucion inicial de los precios en dolares por metro cuadrado:
+
 
 ```{python}
 
@@ -276,7 +281,18 @@ fig.update_layout(title_text='Distribucion del precio en USD por M2')
 
 ```
 
-Limpieza de Datos 
+
+
+
+<div style="text-align: left" class="toc-box">
+# 3 - Limpieza de Datos 
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
 
 ```{python}
 
@@ -333,19 +349,6 @@ df_caba_model.reset_index(drop=True, inplace=True)
 
 
 
-```{python}
-
-
-df_caba_filter = df_caba_model.loc[df_caba_model['place_name'].isin(['Boedo'])]
-
-df_caba_filter["ambientes"] = df_caba_filter["ambientes"].astype(str)
-fig = px.scatter(df_caba_filter, x="surface_covered_in_m2", y="price_usd_per_m2", color="property_type",
-                  hover_data=['property_type'], title = 'Scatter Plot Precio y Superficie Separado por place_name')
-fig.show()
-
-```
-
-
 
 
 
@@ -377,18 +380,21 @@ df_caba_model.reset_index(drop=True, inplace=True)
 ```
 
 
-Visualizaciones Post Limpieza
+<div style="text-align: left" class="toc-box">
+# 4 - Visualizaciones Post Limpieza
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
+
 
 ```{python}
 getPlotGroupDos(df_caba_model,  3)
 ```
 
-
-
-```{python}
-fig = px.scatter(df_caba_model, x="surface_total_in_m2", y="price_usd_per_m2", color="property_type", hover_data=['property_type'])
-fig.show()
-```
 
 
 
@@ -401,35 +407,16 @@ plot3d(df_caba_model, 'price_usd_per_m2', 'surface_total_in_m2', 'ambientes', 'p
 
 
 
-```{python}
-hist_data    = []
-group_labels = []
-limite_superficie = 350
-for i in range(len(df_caba_model['place_name'].unique())):
-    hist_datas = np.array(df_caba_model.loc[( df_caba_model['place_name'].isin([df_caba_model['place_name'].unique()[i]]) ) &  (df_caba_model['surface_covered_in_m2'] < limite_superficie)].surface_covered_in_m2.value_counts().index)
-    hist_data.append(hist_datas)
-    group_labels.append(df_caba_model['place_name'].unique()[i])
-
-
-```
-
-
-```{python}
-fig = ff.create_distplot(hist_data, group_labels, show_hist=False)
-fig.update_layout(title_text='Distribucion de la Superficie Cubierta por M2')
-
-```
-
 
 ```{python}
 hist_data    = []
 group_labels = []
 
 for i in range(len(df_caba_model['place_name'].unique())):
-    hist_datas = np.array(df_caba_model.loc[( df_caba['place_name'].isin([df_caba_model['place_name'].unique()[i]]))].price_usd_per_m2.value_counts().index)
+    hist_datas = np.array(df_caba_model.loc[( df_caba_model['place_name'].isin([df_caba_model['place_name'].unique()[i]]))].price_usd_per_m2.value_counts().index)
     if len(hist_datas) == 1: continue
     hist_data.append(hist_datas)
-    group_labels.append(df_caba['place_name'].unique()[i])
+    group_labels.append(df_caba_model['place_name'].unique()[i])
 
 ```
 
@@ -440,12 +427,14 @@ fig.update_layout(title_text='Distribucion del precio en USD por M2')
 
 ```
 
-
-
-```{python}
-df_caba_model.shape
-```
-
+<div style="text-align: left" class="toc-box">
+# 5 - Modelo
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
 
 
 
@@ -453,11 +442,121 @@ df_caba_model.shape
 df_caba_model.dropna(axis=0).shape
 ```
 
+```{python}
+
+import seaborn as sns
+correlation_mat = df_caba_model[['price_usd_per_m2', 'surface_total_in_m2', 'surface_covered_in_m2',
+       'ambientes']].corr()
+sns.heatmap(correlation_mat, annot = True)
+plt.title("Matriz de Correlacion")
+plt.show()
+
+```
 
 
 ```{python}
 df_caba_model_final = df_caba_model.dropna(axis=0)
 df_caba_model_final.reset_index(inplace = True,drop=True)
 ```
+
+Se crean variable dummies para las features categoricas y se separa el data set en training y set
+
+
+```{python}
+
+df_caba_model_dummies = pd.get_dummies(df_caba_model_final)
+
+X = df_caba_model_dummies.drop(columns = ["price_usd_per_m2",'surface_total_in_m2'])
+y = df_caba_model_dummies[["price_usd_per_m2"]]
+
+Xtrain, Xtest, ytrain, ytest = train_test_split(X,y)
+
+
+```
+
+Se instancia y entrena el modelo de Linear Regression:
+
+```{python}
+modelo = LinearRegression()
+modelo.fit(Xtrain,ytrain)
+
+
+```
+
+Analizo los Betas
+
+```{python}
+
+diccionario = dict(zip(df_caba_model_dummies.drop(columns = ["price_usd_per_m2",'surface_total_in_m2']).columns,[round(value,2) for value in modelo.coef_.tolist()[0]]))
+
+diccionario
+
+```
+
+La presencia de Puerto Madero hace incrementar la variable dependiente
+
+```{python}
+
+diccionario['place_name_Puerto Madero']
+
+```
+
+El **error absoluto medio** (_Mean Absolut Error_ o MAE) es la media del valor absoluto de los errores:
+
+$$ \frac 1n\sum_ {i = 1}^n |y_i-\hat{y}_i| $$
+
+
+```{python}
+
+pred = modelo.predict(Xtest)
+
+print ('MAE:', metrics.mean_absolute_error(ytest, pred).round(2))
+print ('R2:', metrics.r2_score(ytest, pred).round(2))
+
+```
+
+|Modelo||MAE|R2|
+|-|-|-|-|
+|Regresión Logística Nº1 ||443|0.61|
+
+```{python}
+
+pred_X = modelo.predict(X)
+df_caba_model_dummies["Prediccion"] = pred_X
+df_caba_model_dummies[["Prediccion", "price_usd_per_m2"]].sort_values(by = 'Prediccion')
+
+```
+
+
+
+```{python}
+
+
+Modelo_cv = LinearRegression()
+
+cv_results = cross_validate(modelo, Xtrain, ytrain, cv=5, scoring=('r2', "neg_mean_absolute_error"))
+print(cv_results["test_neg_mean_absolute_error"].mean())
+print(cv_results["test_r2"].mean())
+
+```
+
+<div style="text-align: left" class="toc-box">
+# 6 - Conclusiones
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
+
+Luego de generar variables dummies para las features categóricas se estimó un modelo de Regresión Logística dando como resultado un error absoluto medio de 440 dólares por metro cuadrado y un r2 de 0.60.
+
+Estos resultados nos indican que el 60 % de la variabilidad de la variable dependiente esta explicado por las features del modelo y que en promedio el error de estimación del precio en dólares por metro cuadrado es de 440.
+
+Para la validación cruzada se utilizó el promedio de 5 iteraciones dando como resultado valores casi similares a los del modelo tanto en r2 como el MAE.
+
+
+
 
 

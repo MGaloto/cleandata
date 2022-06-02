@@ -11,3 +11,4 @@ ninja_files/
 notebook.html
 notebook_modelo.html
 rsconnect/
+.ipynb_checkpoints

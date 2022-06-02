@@ -231,20 +231,6 @@ getPlot(df, 'state', 'price_mean', 'Precio Promedio por Metro Cuadrado por Zona'
 
 
 ```{python}
-
-
-tipo = data.groupby('property_type')['price_usd_per_m2'].mean().sort_values(ascending = False).index
-values = data.groupby('property_type')['price_usd_per_m2'].mean().sort_values(ascending = False).values
-
-datas = {'tipo': tipo, 'price_mean': values}
-df = pd.DataFrame(datas)
-
-getPlot(df, 'tipo', 'price_mean', 'Precio Promedio M2 Por Tipo de Propiedad' , 'Tipo de Propiedad', 'Precio', 21)
-
-```
-
-
-```{python}
 def getPlotGroup(data, filtro,number_color):
     data = data.loc[data['state_name'] == filtro, ]
     x = data.groupby('place_name')['price_usd_per_m2'].std().sort_values(ascending = False).index
@@ -290,7 +276,14 @@ df_caba = data[data['state_name'] == 'Capital Federal']
 En el siguiente gráfico podemos ver pocos puntos ya que a simple vista encontramos valores atípicos que deberíamos ver si es un error en los datos o efectivamente son verdaderos.
 
 ```{python}
-fig = px.scatter(df_caba, x="surface_total_in_m2", y="price_usd_per_m2", color="property_type",
+
+def custom_log10(x):
+  return np.log10(x) if x != 0 else x
+
+x = df_caba.price_aprox_usd.apply(custom_log10)
+y = df_caba.surface_total_in_m2.apply(custom_log10)
+
+fig = px.scatter(df_caba, x=x, y=y, color="property_type",
                   hover_data=['property_type'])
 fig.show()
 
@@ -364,7 +357,7 @@ color_dos= df_caba.loc[df_caba['place_name'] == zona, ]['property_type']
 fig      = px.box(df_caba_original, x= x, y=y, points="all", color = color, title="Zona por Tipo de departamento Con Outliers")
 figdos   = px.box(df_caba, x= x_dos, y=y_dos, points="all", color = color_dos, title="Zona por Tipo de departamento Sin Outliers")
 fig.show()
-figdos.show()
+#figdos.show()
 
 ```
 
@@ -512,7 +505,7 @@ getPlot(df_palabras_descripcion, 'palabra', 'frecuencia', 'Frecuencia de Palabra
 datos  = {'palabra': values_titulo.index[0:30], 'frecuencia': values_titulo.values[0:30]}
 df_palabras_title = pd.DataFrame(datos)
 
-getPlot(df_palabras_title, 'palabra', 'frecuencia', 'Frecuencia de Palabras Title' , 'palabra', 'frecuencia',  11)
+#getPlot(df_palabras_title, 'palabra', 'frecuencia', 'Frecuencia de Palabras Title' , 'palabra', 'frecuencia',  11)
 ```
 
 
@@ -636,33 +629,17 @@ round(df_caba.isnull().sum() / df_caba.shape[0],2).sort_values(ascending = False
 
 ```{python}
 df_caba_apartment = df_caba.loc[df_caba['property_type'] == 'apartment' , :]
-df_caba_filter_apartment = df_caba_apartment.loc[(df_caba_apartment['surface_covered_in_m2'] < 250) & (df_caba_apartment['price_usd_per_m2'] < 5000)]
+df_caba_apartment["ambientes"] = df_caba_apartment["ambientes"].astype(str)
 
-df_caba_filter_apartment["ambientes"] = df_caba_filter_apartment["ambientes"].astype(str)
-fig = px.scatter(df_caba_filter_apartment, x="surface_covered_in_m2", y="price_usd_per_m2", color="ambientes",
-                  hover_data=['property_type'], title = 'Scatter Plot Precio y Superficie Separado por Ambientes para apartment')
-fig.show()
+x = df_caba_apartment.price_aprox_usd.apply(custom_log10)
+y = df_caba_apartment.surface_total_in_m2.apply(custom_log10)
 
-
-```
-
-
-
-```{python}
-
-(data['price_aprox_local_currency']/data['price_aprox_usd']).mean()
-```
-
-
-
-
-```{python}
-
-df = px.data.tips()
-fig = px.box(df_caba, x="place_name", y="price_usd_per_m2", points="all", color ='property_type')
+fig = px.scatter(df_caba_apartment, x=x, y=y, color="ambientes",
+                  hover_data=['property_type'], title = 'Scatter Plot Precio Total y Superficie Separado por Ambientes para Apartment en Logaritmos')
 fig.show()
 
 ```
+
 
 
 
