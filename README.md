@@ -97,6 +97,13 @@ Palabras claves para las features obtenidas del uso de la librería NLTK:
 </p>
 
 
+# Notebooks en R Markdown
+
+
+[Parte 1](https://rpubs.com/MGaloto/data_wrangling)
+[Parte 2](https://rpubs.com/MGaloto/regresionLinealMultiple)
+
+
 
 # Datos
 
