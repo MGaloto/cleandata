@@ -12,3 +12,7 @@ notebook.html
 notebook_modelo.html
 rsconnect/
 .ipynb_checkpoints
+*.csv
+*.xlsx
+*.html
+*.pdf
