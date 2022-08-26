@@ -128,6 +128,9 @@ El siguiente trabajo consiste en un análisis preliminar de los datos de la inmo
 **_Librerías_**
 
 Para utilizar código <span style="color:blue">*Python*</span> en R Markdown se usa la librería reticulate.
+
+<br>
+</br>
  
 ```{r}
 

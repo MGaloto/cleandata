@@ -642,4 +642,16 @@ fig.show()
 
 
 
+<br>
+</br>
+<div style="text-align: left" class="toc-box">
+# 6 - Conclusiones
+</div>
+<div style="text-align: right" class="toc-box">
+ <a href="#top">Volver al Inicio</a>
+</div>
+<br>
+</br>
+
+Una vez hecha la limpieza del data set se guarda el archivo para entrenar un modelo que mejor generalice nuestros datos y así poder predecir el precio en dólares por metro cuadrado dada una determinada cantidad de features.
 
